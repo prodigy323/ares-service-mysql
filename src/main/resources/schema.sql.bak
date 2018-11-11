@@ -2,9 +2,9 @@ DROP TABLE IF EXISTS HERO;
 
 CREATE TABLE hero (
     id INTEGER NOT NULL AUTO_INCREMENT,
-    firstname VARCHAR(32),
-    lastname VARCHAR(32),
-    codename VARCHAR(32),
+    first_name VARCHAR(32),
+    last_name VARCHAR(32),
+    code_name VARCHAR(32),
     email VARCHAR(32),
     team VARCHAR(32),
     PRIMARY KEY (id)
