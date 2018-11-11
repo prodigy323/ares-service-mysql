@@ -46,7 +46,7 @@ public class HeroController {
         return new ResponseEntity<>(hero, HttpStatus.OK);
     }
 
-    @RequestMapping (value = "/updateList", method = RequestMethod.POST)
+    @RequestMapping (value = "/updateList", method = RequestMethod.PUT)
     public ResponseEntity<List<Hero>> updateHeroes (@RequestBody List<Hero> heroes) {
 
         log.info("PUT list of heroes");
