@@ -1,7 +1,13 @@
 # ares-service-mysql
 Spring Data Rest with JPA connecting to MySQL
 
-schema.sql to set up schema
+## ToDo
+* encrypt/decrypt db credentials with Spring Config
+* implement Vault
+
+----
+
+### schema.sql
 ```sql
 DROP TABLE IF EXISTS HERO;	
 	CREATE TABLE hero (
@@ -15,7 +21,7 @@ DROP TABLE IF EXISTS HERO;
 );
 ```
 
-data.sql to populate data
+### data.sql
 ```sql
 insert into hero (first_name, last_name, code_name, email, team) values 
 ('Tony', 'Stark', 'Ironman', 'ironman@avengers.com', 'Avengers')
@@ -24,7 +30,7 @@ insert into hero (first_name, last_name, code_name, email, team) values
 > rename these files so they don't execute on startup or set the property
 spring.datasource.initialization-mode=none
 
-application.properties (or yml)
+### application.properties (or yml)
 ```
 # create, update, create-drop, validate, none	
 #spring.jpa.hibernate.ddl-auto=update
@@ -35,7 +41,7 @@ spring.datasource.password=newpass
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
 ```
 
-Create the Entity object
+### Create the Entity object
 ```java
 @Entity	
 @Data
@@ -62,7 +68,7 @@ public class Hero {
 }
 ```
 
-Create a JPA Repository that extends CrudRepository class
+### Create a JPA Repository that extends CrudRepository class
 ```java
 @RepositoryRestResource
 public interface HeroRepository extends CrudRepository<Hero, Long> {
@@ -75,7 +81,7 @@ public interface HeroRepository extends CrudRepository<Hero, Long> {
 }
 ```
 
-Then configure the Controller methods to use the Repository for CRUD actions
+### Connfigure the Controller methods to use the Repository for CRUD actions
 ```java
 @RestController	
 @Slf4j
