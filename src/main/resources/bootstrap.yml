@@ -1,0 +1,9 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ares-service-mysql
+  cloud:
+    config:
+      uri: http://localhost:8900
