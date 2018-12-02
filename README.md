@@ -30,15 +30,35 @@ insert into hero (first_name, last_name, code_name, email, team) values
 > rename these files so they don't execute on startup or set the property
 spring.datasource.initialization-mode=none
 
-### application.properties (or yml)
+### bootstrap.yml
+```yaml
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ares-service-mysql
+  cloud:
+    config:
+      uri: http://localhost:8900
 ```
-# create, update, create-drop, validate, none	
-#spring.jpa.hibernate.ddl-auto=update
-spring.datasource.url=jdbc:mysql://127.0.0.1:3306/ares_service_mysql
-spring.datasource.username=newuser
-spring.datasource.password=newpass
-#spring.datasource.initialization-mode=always
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+
+### ares-service-mysql.yml
+```yaml
+# create, update, create-drop, validate, none
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/ares_service_mysql
+    username: newuser
+    # password: newpass
+    password: '{cipher}AQBMJGTaOOQ/lPcJeVX1HF74RlILbWENzKD/kMoIjhFT9pYz/EoAhw1Vv3uJ2Jgy61Xl9hEN4WTD5SXEfS1ExAzI+IvNB9x5PGCI0a0dO+xXs7Al8kreoiYOCZm/1wPrCYotY0z/Jlp8AIdlRcSX2+0hTP8s+EkqsQLQvrgN6Z62Rni+h1KE9oeE+K4qtjIafgsVylwqI09LOpOonpTcWk5T+WndnqeFjuZqbAAlQJ6nQNJJhXvT8C7Zv/bgF2fKBcSWOYbd5Ud1Y+Gp5dO9ZVJIa6n1qa+szbC1uRUdFBF3uXr43nZClAIAK/qEjxcV34wsppfj9e610KKJM5kNFFepkAfnysPg8dAIapZqQTzpvwQiqIZGTfRyS62wP+lq1hc='
+    # initialization-mode: always
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5Dialect
+    # hibernate:
+    #   ddl-auto: update
 ```
 
 ### Create the Entity object
@@ -133,5 +153,72 @@ public class HeroController {
 	  heroRepository.deleteAll();
 	  return new ResponseEntity<>(deletedHeroes, HttpStatus.OK);
 	}
+}
+```
+
+### Dockerfile
+```dockerfile
+FROM openjdk:8-jdk-alpine
+ARG JAR_FILE
+COPY ${JAR_FILE} app.jar
+EXPOSE 8900
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+```
+
+### Jenkinsfile
+```groovy
+def mvnTool
+def prjName = "ares-service-mysql"
+def imageTag = "latest"
+
+pipeline {
+    agent { label 'maven' }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '2'))
+        disableConcurrentBuilds()
+    }
+    stages {
+        stage('Build && Test') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    script {
+                        mvnTool = tool 'Maven'
+                        sh "${mvnTool}/bin/mvn -B clean verify sonar:sonar -Prun-its,coverage"
+                    }
+                }
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                    jacoco(execPattern: 'target/jacoco.exec')
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        stage('Release && Publish Artifact') {
+
+        }
+        stage('Create Image') {
+            steps {
+                sh "docker build --build-arg JAR_FILE=target/${prjName}-${releaseVersion}.jar -t ${prjName}:${releaseVersion}"
+            }
+        }
+        stage('Publish Image') {
+            steps {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'JENKINS_ID', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                    sh """
+                        docker login -u ${USERNAME} -p ${PASSWORD} dockerRepoUrl
+                        docker push ...
+                    """
+                }
+            }
+        }
+    }
 }
 ```
